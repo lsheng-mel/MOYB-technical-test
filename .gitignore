@@ -1,0 +1,5 @@
+# exclude everything from the folder node_modules
+node_modules/*
+
+# exclude everythinh from the coverage output
+coverage/*
