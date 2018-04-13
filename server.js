@@ -8,9 +8,11 @@ var healthcheck = require("express-healthcheck");
 
 var metadata = require('./package.json');
 
+app.set("view engine", "ejs");
+
 // root endpoint
 app.get("/", function(req, res){
-	res.send("Hello World!");
+	res.render("index");
 });
 
 // health endpoint
