@@ -23,7 +23,7 @@ describe('Endpoints:', function() {
 		it('content', function(done){
 			request('http://localhost:3000', function(error, response, body)
 			{
-				expect(body).to.equal("Hello World!");
+				expect(body).to.equal("<h1>Hello World!</h1>");
 				done();
 			});
 		});
