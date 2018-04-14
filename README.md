@@ -36,7 +36,7 @@ I chose to use **AWS codePipeline** due to several reasons:
    ### Manual deployment
    ---
 
-   1. Define the container with Dockerfile. This specifies what dependencies are included and what commadn to run. The file looks like below   in my case:
+   1. Define the container with Dockerfile. This specifies what dependencies are included and what command to run. The file looks like below   in my case:
       ```
       # user the node of version carbon
       FROM node:carbon
@@ -65,10 +65,10 @@ I chose to use **AWS codePipeline** due to several reasons:
    ### Automatic deployment
    ---
 
-   1. Create a GitHub repository to hold my codebase, and this is where my CI system will pull all resources from.
-   1. Make sure the docker configuration **Dockerfile** is included in the git repository(the content of **Dockerfile** is the same to the manual deployment process above).
-   2. Create a **Amazon ECR** as the repositoy of all my container images.
-   3. Create an Amazon ECS task defition that references the Docker image hosted in **AWS ECR**. My task definition (in JSON format)looks like below:
+   1. Create a GitHub repository to hold my codebase, and this is where my CI system will pull all sources from.
+   2. Make sure the docker configuration **Dockerfile** is included in the git repository(the content of **Dockerfile** is the same to the manual deployment process above).
+   3. Create a **Amazon ECR** as the repositoy of all my container images.
+   4. Create an **Amazon ECS** task defition that references the Docker image hosted in **AWS ECR**. My task definition (in JSON format) looks like below:
       ```
       {
 		  "executionRoleArn": null,
@@ -134,39 +134,38 @@ I chose to use **AWS codePipeline** due to several reasons:
 		  "volumes": []
 		}
       ```
-     4. Create an Amazon ECS cluster that is running a service that uses the task defition that is created earlier.
-     5. Setup Continious Integration using **AWS CodeBuild** web service, and this starts with creating a build specification file (**buildspec.yml**) and ensuring it is included in my git codebase, the content of the file is shown below.
-     ```
-     version: 0.2
-
-	 phases:
-	  pre_build:
-	    commands:
-	      - echo Logging in to Amazon ECR...
-	      - aws --version
-	      - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
-	      - REPOSITORY_URI=708541441402.dkr.ecr.ap-southeast-2.amazonaws.com/lsheng-ecr
-	      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-	 build:
-	    commands:
-	      - echo Build started on `date`
-	      - echo Building the Docker image...          
-	      - docker build -t $REPOSITORY_URI:latest .
-	      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
-	 post_build:
-	    commands:
-	      - echo Build completed on `date`
-	      - echo Pushing the Docker images...
-	      - docker push $REPOSITORY_URI:latest
-	      - docker push $REPOSITORY_URI:$IMAGE_TAG
-	      - echo Writing image definitions file...
-	      - printf '[{"name":"TechnicalTestImage","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
-	 artifacts:
-	    files: imagedefinitions.json
-     ```
-     6. Create a AWS codePipeline. The main configuration to mention is below:
+   5. Create an **Amazon ECS cluster** that is running a service that uses the task defition that is created earlier.
+   6. Setup Continious Integration using **AWS CodeBuild** web service, and this starts with creating a build specification file (**buildspec.yml**) and ensuring it is included in my git codebase, the content of the file is shown below.
+      ```
+	     version: 0.2
+		 phases:
+		  pre_build:
+		    commands:
+		      - echo Logging in to Amazon ECR...
+		      - aws --version
+		      - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+		      - REPOSITORY_URI=708541441402.dkr.ecr.ap-southeast-2.amazonaws.com/lsheng-ecr
+		      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+		 build:
+		    commands:
+		      - echo Build started on `date`
+		      - echo Building the Docker image...          
+		      - docker build -t $REPOSITORY_URI:latest .
+		      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+		 post_build:
+		    commands:
+		      - echo Build completed on `date`
+		      - echo Pushing the Docker images...
+		      - docker push $REPOSITORY_URI:latest
+		      - docker push $REPOSITORY_URI:$IMAGE_TAG
+		      - echo Writing image definitions file...
+		      - printf '[{"name":"TechnicalTestImage","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+		 artifacts:
+		    files: imagedefinitions.json
+      ```
+   7. Create a **AWS codePipeline**. The main configuration to mention is below:
      * Choose '**GitHub**' as the **Source Provider**, and specify the path to my GitHub repository.
      * Choose '**AWS CodeBuild**' for the build stage.
      * Choose '**Amazon ECS**' for **Deployment Provider**
 
-  Once the pipeline is created, every code commit will trigger the whole process of deployment, which is in 3 stages: Source, Build and Staging.
+  ### Once the pipeline is created, every code commit will trigger the deployment process, which is consist of 3 stages: Source, Build and Staging.
