@@ -15,51 +15,48 @@ I chose to use **AWS codePipeline** due to several reasons:
 * Security offered by AWS
 
 # write a clear and understandable README which explains your application and its deployment steps
----
 
    ## Following technologies are mainly involved/used to implement the application:
 
-      * It uses **NodeJS** as the backend server runtime.
-      * It uses **Express** as the backend application framework, i.e routing, etc.
-      * **EJS** templates are used for rendering applicable API endpoints.
+   * It uses **NodeJS** as the backend server runtime.
+   * It uses **Express** as the backend application framework, i.e routing, etc.
+   * **EJS** templates are used for rendering applicable API endpoints.
 
----
 
    ## The application structure is described below:
 
-      * Configuration details and dependencies are specified in the file **package-lock.json** and **package.json**
-      * The entry point of the application is in the file **server.js**, and this is where the app initialisation and routing is done
-      * The views that are rendered when endpoints are hit are placed within the folder **/views**, in my case there is only one EJS template since the other endpoints are simply returning objects
-      * Test scripts are placed within the folder **/test**, I have created some integration tests to ensure desired routing is working and endpoints are responding requests correctly. Note that I have not created any unit tests since I don't have any functions or so defined in my implementation.
+   * Configuration details and dependencies are specified in the file **package-lock.json** and **package.json**
+   * The entry point of the application is in the file **server.js**, and this is where the app initialisation and routing is done
+   * The views that are rendered when endpoints are hit are placed within the folder **/views**, in my case there is only one EJS template since the other endpoints are simply returning objects
+   * Test scripts are placed within the folder **/test**, I have created some integration tests to ensure desired routing is working and endpoints are responding requests correctly. Note that I have not created any unit tests since I don't have any functions or so defined in my implementation.
 
----
 
-  ## Deployment process
+   ## Deployment process
 
-     ### Manual deployment
+   ### Manual deployment
 
-        1. Define the container with Dockerfile. This specifies what dependencies are included and what commadn to run. The file looks like below   in my case:
-           ```
-           # user the node of version carbon
-           FROM node:carbon
+   1. Define the container with Dockerfile. This specifies what dependencies are included and what commadn to run. The file looks like below   in my case:
+      ```
+      # user the node of version carbon
+      FROM node:carbon
 
-           # Create app directory
-           WORKDIR /app
+      # Create app directory
+      WORKDIR /app
 
-           # Install app dependencies, use a wildcard to ensure both package.json and package-lock.json are both copied
-           COPY package*.json ./
+      # Install app dependencies, use a wildcard to ensure both package.json and package-lock.json are both copied
+      COPY package*.json ./
 
-           # run the command 'npm install' to install all dependencies that's listed in package.json
-           RUN npm install
+      # run the command 'npm install' to install all dependencies that's listed in package.json
+      RUN npm install
 
-           # Bundle app source
-           COPY . .
+      # Bundle app source
+      COPY . .
 
-           EXPOSE 3000
-           CMD ["npm", "start"]
-           ```
-        2. Go to the root folder of the application, and build the container image using following command in my case:
-           ```
-           docker build -t TechnicalTestContainerImage .
-           ```
-        3. Deploy the web in any container enabled deployment system, i.e AWS ECS, Kubernetes, etc.
+      EXPOSE 3000
+      CMD ["npm", "start"]
+      ```
+   2. Go to the root folder of the application, and build the container image using following command in my case:
+      ```
+      docker build -t TechnicalTestContainerImage .
+      ```
+   3. Deploy the web in any container enabled deployment system, i.e AWS ECS, Kubernetes, etc.
