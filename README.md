@@ -4,13 +4,13 @@ I am packaging everything into a container image as the single deployable artifa
 
 # Create a pipeline that builds your application on each commit; Travis or similar, for example
 
-There are quite a lot of options for continious integration/deployment in the market at the moment, while the most popular ones such as Trvais, Jenkins, TeamCity, CircleCI, Solano on top of my head.
+There are quite a lot of options for continious integration/deployment in the market at the moment, some of the most popular ones are Trvais, Jenkins, TeamCity, CircleCI, Solano, etc.
 
 I chose to use **AWS codePipeline** due to several reasons:
 
 * It is simple to use, and comes with a nice web-basd GUI to configure your deployment
-* It can take build artifact from **AWS codeBuild**, and the codeBuild is simple and easy to configure using the config file buildspec.yml
-* It is fully supported by AWS cloud technologies such as **EC2**, **ECS**, **ECR**, etc
+* It can take build artifact from **AWS CodeBuild**, and the CodeBuild is simple and easy to configure using the config file buildspec.yml
+* It is fully supported by AWS services such as **EC2**, **ECS**, **ECR**, etc
 * Scale up or down is easily done in AWS EC2.
 * Security offered by AWS
 
@@ -34,6 +34,7 @@ I chose to use **AWS codePipeline** due to several reasons:
    ## Deployment process
 
    ### Manual deployment
+   ---
 
    1. Define the container with Dockerfile. This specifies what dependencies are included and what commadn to run. The file looks like below   in my case:
       ```
@@ -60,3 +61,112 @@ I chose to use **AWS codePipeline** due to several reasons:
       docker build -t TechnicalTestContainerImage .
       ```
    3. Deploy the web in any container enabled deployment system, i.e AWS ECS, Kubernetes, etc.
+
+   ### Automatic deployment
+   ---
+
+   1. Create a GitHub repository to hold my codebase, and this is where my CI system will pull all resources from.
+   1. Make sure the docker configuration **Dockerfile** is included in the git repository(the content of **Dockerfile** is the same to the manual deployment process above).
+   2. Create a **Amazon ECR** as the repositoy of all my container images.
+   3. Create an Amazon ECS task defition that references the Docker image hosted in **AWS ECR**. My task definition (in JSON format)looks like below:
+      ```
+      {
+		  "executionRoleArn": null,
+		  "containerDefinitions": [
+		    {
+		      "dnsSearchDomains": null,
+		      "logConfiguration": null,
+		      "entryPoint": [],
+		      "portMappings": [
+		        {
+		          "hostPort": 4000,
+		          "protocol": "tcp",
+		          "containerPort": 3000
+		        }
+		      ],
+		      "command": [],
+		      "linuxParameters": null,
+		      "cpu": 10,
+		      "environment": [],
+		      "ulimits": null,
+		      "dnsServers": null,
+		      "mountPoints": [],
+		      "workingDirectory": null,
+		      "dockerSecurityOptions": null,
+		      "memory": 300,
+		      "memoryReservation": null,
+		      "volumesFrom": [],
+		      "image": "708541441402.dkr.ecr.ap-southeast-1.amazonaws.com/lsheng-container-repository:latest",
+		      "disableNetworking": null,
+		      "healthCheck": null,
+		      "essential": true,
+		      "links": [],
+		      "hostname": null,
+		      "extraHosts": null,
+		      "user": null,
+		      "readonlyRootFilesystem": null,
+		      "dockerLabels": null,
+		      "privileged": null,
+		      "name": "TechnicalTestImage"
+		    }
+		  ],
+		  "placementConstraints": [],
+		  "memory": null,
+		  "taskRoleArn": null,
+		  "compatibilities": [
+		    "EC2"
+		  ],
+		  "taskDefinitionArn": "arn:aws:ecs:ap-southeast-2:708541441402:task-definition/TechnicalTestSolution:1",
+		  "family": "TechnicalTestSolution",
+		  "requiresAttributes": [
+		    {
+		      "targetId": null,
+		      "targetType": null,
+		      "value": null,
+		      "name": "com.amazonaws.ecs.capability.ecr-auth"
+		    }
+		  ],
+		  "requiresCompatibilities": null,
+		  "networkMode": null,
+		  "cpu": null,
+		  "revision": 1,
+		  "status": "ACTIVE",
+		  "volumes": []
+		}
+      ```
+     4. Create an Amazon ECS cluster that is running a service that uses the task defition that is created earlier.
+     5. Setup Continious Integration using **AWS CodeBuild** web service, and this starts with creating a build specification file (**buildspec.yml**) and ensuring it is included in my git codebase, the content of the file is shown below.
+     ```
+     version: 0.2
+
+	 phases:
+	  pre_build:
+	    commands:
+	      - echo Logging in to Amazon ECR...
+	      - aws --version
+	      - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+	      - REPOSITORY_URI=708541441402.dkr.ecr.ap-southeast-2.amazonaws.com/lsheng-ecr
+	      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+	 build:
+	    commands:
+	      - echo Build started on `date`
+	      - echo Building the Docker image...          
+	      - docker build -t $REPOSITORY_URI:latest .
+	      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+	 post_build:
+	    commands:
+	      - echo Build completed on `date`
+	      - echo Pushing the Docker images...
+	      - docker push $REPOSITORY_URI:latest
+	      - docker push $REPOSITORY_URI:$IMAGE_TAG
+	      - echo Writing image definitions file...
+	      - printf '[{"name":"TechnicalTestImage","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+	 artifacts:
+	    files: imagedefinitions.json
+     ```
+     6. Create a AWS codePipeline. The main configuration to mention is below:
+     * Choose '**GitHub**' as the **Source Provider**, and specify the path to my GitHub repository.
+     * Choose '**AWS CodeBuild**' for the build stage.
+     * Choose '**Amazon ECS**' for **Deployment Provider**
+
+  Once the pipeline is created, every code commit will trigger the whole process of deployment, which is in 3 stages: Source, Build and Staging.
