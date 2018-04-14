@@ -164,8 +164,8 @@ I chose to use **AWS codePipeline** due to several reasons:
 		    files: imagedefinitions.json
       ```
    7. Create a **AWS codePipeline**. The main configuration to mention is below:
-     * Choose '**GitHub**' as the **Source Provider**, and specify the path to my GitHub repository.
+     * Choose '**GitHub**' as the **Source Provider**, and specify the path of my GitHub repository.
      * Choose '**AWS CodeBuild**' for the build stage.
-     * Choose '**Amazon ECS**' for **Deployment Provider**
+     * Choose '**Amazon ECS**' for **Deployment Provider**, and make sure the correct cluster ('Default' in my case) and ECS service ('sample-webapp' in my case) is selected.
 
   ### Once the pipeline is created, every code commit will trigger the deployment process, which is consist of 3 stages: Source, Build and Staging.
