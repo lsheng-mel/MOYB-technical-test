@@ -1,3 +1,7 @@
+# The application has been deployed to AWS ECS and can be accessed via the following link
+
+<http://ecs-first-run-alb-2000633438.ap-southeast-2.elb.amazonaws.com:3000>
+
 # provide a means of packaging your application as a single deployable artifact which encapsulates its dependencies
 
 I am packaging everything into a container image as the single deployable artifact. The main reason is being that the container technology is cross-platform and is supported by verious different packaging softwares, i.e Docker, Kubernetes, etc.
